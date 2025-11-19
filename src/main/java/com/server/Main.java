@@ -14,7 +14,7 @@ public class Main {
     private final static Logger LOGGER = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) {
-
+        
         LOGGER.info("Starting server...");
         ConfigurationManager.getInstance().loadConfigurationFile("src/main/resources/http.json");
         Configuration conf = ConfigurationManager.getInstance().getCurrentConfiguration();

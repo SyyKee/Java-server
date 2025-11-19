@@ -1,5 +1,7 @@
 package com.server.core;
 
+import com.server.http.HttpParser;
+import com.server.http.HttpRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -7,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 
 public class HttpConnectionWorkerThread extends Thread {
     private final static Logger LOGGER = LoggerFactory.getLogger(HttpConnectionWorkerThread.class);
@@ -30,6 +33,14 @@ public class HttpConnectionWorkerThread extends Thread {
 
             final String CRLF = "\n\r";
 
+            HttpParser parser = new HttpParser();
+            HttpRequest request = parser.parseHttpRequest(inputStream);
+
+            LOGGER.info("Parsed HTTP request:");
+            LOGGER.info("Method: {}", request.getMethod());
+            LOGGER.info("Target: {}", request.getRequestTarget());
+            LOGGER.info("Headers: {}", request.getHeaders());
+            LOGGER.info("Body: {}", request.getBody());
             String response =
                     "HTTP/1.1 200 OK" + CRLF + //status line -> HTTP_VERSION RESPONSE_CODE RESPONSE_MESSAGE
                             "Content-Length: " + html.getBytes().length + CRLF + // HEADER
@@ -39,7 +50,8 @@ public class HttpConnectionWorkerThread extends Thread {
                             CRLF;
 
 
-            outputstream.write(response.getBytes());
+            outputstream.write(response.getBytes(StandardCharsets.US_ASCII));
+            outputstream.flush();
 
 
             LOGGER.info("proccess end");
