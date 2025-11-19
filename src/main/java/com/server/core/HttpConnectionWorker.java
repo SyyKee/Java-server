@@ -8,15 +8,16 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
+import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
 
-public class HttpConnectionWorkerThread extends Thread {
-    private final static Logger LOGGER = LoggerFactory.getLogger(HttpConnectionWorkerThread.class);
+public class HttpConnectionWorker implements Runnable {
+    private final static Logger LOGGER = LoggerFactory.getLogger(HttpConnectionWorker.class);
 
 
     private Socket socket;
 
-    HttpConnectionWorkerThread(Socket socket) {
+    HttpConnectionWorker(Socket socket) {
         this.socket = socket;
     }
 
@@ -25,8 +26,14 @@ public class HttpConnectionWorkerThread extends Thread {
         InputStream inputStream = null;
         OutputStream outputstream = null;
         try {
-             inputStream = socket.getInputStream();
-             outputstream = socket.getOutputStream();
+            try {
+                inputStream = socket.getInputStream();
+            } catch (SocketException e) {
+                LOGGER.warn("Client disconnected before processing");
+                return;
+            }
+
+            outputstream = socket.getOutputStream();
 
             String html = "<html><head><title>One socket server page</title> </head><body> <h1>Hello this is a one socket server page</h1></body></html>";
 
@@ -54,11 +61,12 @@ public class HttpConnectionWorkerThread extends Thread {
             if (handler != null) {
                 response = handler.handle(request);
             }else {
+                response.setStatusCode(404);
                 response.setBody("<h1>404 Not Found</h1>");
                 response.addHeader("Content-Type", "text/html");
             }
 
-            StringBuilder raw = new StringBuilder();
+            StringBuffer raw = new StringBuffer();
             raw.append("HTTP/1.1 ").append(response.getStatusCode()).append(" OK\r\n");
             response.getHeaders().forEach((k,v) -> raw.append(k).append(": ").append(v).append("\r\n"));
             raw.append("Content-Length: ").append(response.getBody().getBytes().length).append("\r\n");

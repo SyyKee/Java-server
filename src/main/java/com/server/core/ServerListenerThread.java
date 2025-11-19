@@ -8,6 +8,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ServerListenerThread extends Thread{
 
@@ -17,6 +19,9 @@ public class ServerListenerThread extends Thread{
     private int port;
     private String webroot;
     private ServerSocket serverSocket;
+
+    private ExecutorService threadPool = Executors.newFixedThreadPool(20);
+
 
     public ServerListenerThread(int port, String webroot) throws IOException {
         this.port = port;
@@ -34,23 +39,16 @@ public class ServerListenerThread extends Thread{
                 Socket socket = serverSocket.accept();
 
                 LOGGER.info("Accepted connection from " + socket.getInetAddress());
-                HttpConnectionWorkerThread workerThread = new HttpConnectionWorkerThread(socket);
-                workerThread.start();
+                threadPool.submit(new HttpConnectionWorker(socket));
 
-
-                //serverSocket.close(); TODO Handle close
             }
 
             }catch(IOException e){
                 e.printStackTrace();
                 LOGGER.error("Socket error", e);
             } finally {
-                if (serverSocket != null) {
-                    try {
-                        serverSocket.close();
-                    } catch (IOException e) {
-                    }
-                }
+                if (serverSocket != null) try { serverSocket.close(); } catch (IOException ignored) {}
+                threadPool.shutdown();
             }
         }
 
