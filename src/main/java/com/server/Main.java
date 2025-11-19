@@ -17,6 +17,9 @@ public class Main {
 
     public static void main(String[] args) {
 
+        Router.registerAnnotatedControllers("com.server.controllers");
+
+
         Router.addRoute("GET", "/", request -> {
             HttpResponse res = new HttpResponse();
             res.setBody("<h1>Welcome Home</h1>");
